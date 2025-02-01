@@ -43,23 +43,8 @@ const AirdropSchema = z.object({
 export default function AirdropUI() {
   const { address } = useAccount();
   const [manualAirdropId, setManualAirdropId] = useState<string>("");
-  const [airdropStatus, setAirdropStatus] = useState<any>({
-      "status": "Drawing",
-      "winners": {
-        "0x1234567890abcdef1234567890abcdef12345678": {
-          "amount": 100,
-          "symbol": "XYZ"
-        },
-        "0xabcdef1234567890abcdef1234567890abcdef12": {
-          "amount": 50,
-          "symbol": "XYZ"
-        },
-        "0x7890abcdef1234567890abcdef1234567890ab": {
-          "amount": 75,
-          "symbol": "XYZ"
-        }
-      }
-    });
+  const [airdropStatus, setAirdropStatus] = useState<any>();
+
   const [airdropError, setAirdropError] = useState<string | null>(null);
 
   const { register, handleSubmit, control, formState: { errors }, setValue, watch } = useForm({
@@ -86,8 +71,13 @@ export default function AirdropUI() {
     onError: (error: any) => {
       if (error.response && error.response.status === 401) {
         handleLogout();
-      } else if (error.response && error.response.status === 400 && error.response.data.errors) {
-        setFormErrors(error.response.data.errors);
+      } else if (error.response && error.response.status === 400) {
+        if(error.response.data.errors){
+          setFormErrors(error.response.data.errors);
+        }
+        else if(error.response.data.message){
+          setFormErrors([error.response.data.message])
+        }
       } else {
         setFormErrors([]);
       }
@@ -100,11 +90,11 @@ export default function AirdropUI() {
         alert("Please enter an Airdrop ID");
         return;
       }
-      return api.post(`/airdrop/${manualAirdropId}/drawOne`, {});
+      const response =  await api.post(`/airdrop/${manualAirdropId}/drawOne`, {});
+      alert(response.data.message);
     },
-    onSuccess: (data: any) => {
+    onSuccess: (response: any) => {
       setAirdropError(null);
-      alert(`Success: ${data?.message}`);
     },
     onError: (error: any) => {
       if (error.response && error.response.status === 401) {
@@ -121,11 +111,12 @@ export default function AirdropUI() {
         alert("Please enter an Airdrop ID");
         return;
       }      
-      return api.post(`/airdrop/${manualAirdropId}/drawAll`, {});
+      const response =  await api.post(`/airdrop/${manualAirdropId}/drawAll`, {});
+      alert(response.data.message);
     },
-    onSuccess: (data: any) => {
+    onSuccess: (response: any) => {
       setAirdropError(null);
-      alert(`Success: ${data.message}`);
+      alert(`Success: ${response.data.message}`);
     },
     onError: (error: any) => {
       if (error.response && error.response.status === 401) {
@@ -143,7 +134,7 @@ export default function AirdropUI() {
         return;
       }      
       const response = await api.get(`/airdrop/${manualAirdropId}/status`);
-      setAirdropStatus(response.data);
+      setAirdropStatus(response.data.data);
     },
     onError: (error: any) => {
       if (error.response && error.response.status === 401) {
@@ -293,7 +284,7 @@ export default function AirdropUI() {
             </Space>
           </div>
 
-          <AirdropStatusDisplay airdropStatus={airdropStatus} />
+          {airdropStatus && <AirdropStatusDisplay airdropStatus={airdropStatus} />}
         </Card>
       ) : (
         <Card>
