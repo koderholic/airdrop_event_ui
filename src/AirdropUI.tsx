@@ -59,24 +59,30 @@ export default function AirdropUI() {
 
   const { handleLogout } = useLogout();
 
+  const [loading, setLoading] = useState<{ isLoading: boolean; message: string }>({ isLoading: false, message: '' });
+
   const createAirdrop = useMutation({
     mutationFn: async (data: any) => {
+      setLoading({ isLoading: true, message: 'Creating airdrop event...' });
+
       const response = await api.post("/airdrop/create", data);
+      
       return response.data;
     },
     onSuccess: (data) => {
       setFormErrors([]);
+      setLoading({ isLoading: false, message: '' });
       alert(`Success: ${data.message}. Event ID: ${data.data.eventId}`);
     },
     onError: (error: any) => {
+      setLoading({ isLoading: false, message: '' });
       if (error.response && error.response.status === 401) {
         handleLogout();
       } else if (error.response && error.response.status === 400) {
-        if(error.response.data.errors){
+        if (error.response.data.errors) {
           setFormErrors(error.response.data.errors);
-        }
-        else if(error.response.data.message){
-          setFormErrors([error.response.data.message])
+        } else if (error.response.data.message) {
+          setFormErrors([error.response.data.message]);
         }
       } else {
         setFormErrors([]);
@@ -90,13 +96,17 @@ export default function AirdropUI() {
         alert("Please enter an Airdrop ID");
         return;
       }
-      const response =  await api.post(`/airdrop/${manualAirdropId}/drawOne`, {});
-      alert(response.data.message);
+      setLoading({ isLoading: true, message: 'Drawing one prize...' });
+      const response = await api.post(`/airdrop/${manualAirdropId}/drawOne`, {});
+      return response.data;
     },
-    onSuccess: (response: any) => {
+    onSuccess: (data: any) => {
       setAirdropError(null);
+      setLoading({ isLoading: false, message: '' });
+      alert(data.message);
     },
     onError: (error: any) => {
+      setLoading({ isLoading: false, message: '' });
       if (error.response && error.response.status === 401) {
         handleLogout();
       } else if (error.response && error.response.status === 400) {
@@ -110,15 +120,18 @@ export default function AirdropUI() {
       if (!manualAirdropId) {
         alert("Please enter an Airdrop ID");
         return;
-      }      
-      const response =  await api.post(`/airdrop/${manualAirdropId}/drawAll`, {});
-      alert(response.data.message);
+      }
+      setLoading({ isLoading: true, message: 'Drawing all prizes...' });
+      const response = await api.post(`/airdrop/${manualAirdropId}/drawAll`, {});
+      return response.data;
     },
-    onSuccess: (response: any) => {
+    onSuccess: (data: any) => {
       setAirdropError(null);
-      alert(`Success: ${response.data.message}`);
+      setLoading({ isLoading: false, message: '' });
+      alert(data.message);
     },
     onError: (error: any) => {
+      setLoading({ isLoading: false, message: '' });
       if (error.response && error.response.status === 401) {
         handleLogout();
       } else if (error.response && error.response.status === 400) {
@@ -132,11 +145,15 @@ export default function AirdropUI() {
       if (!manualAirdropId) {
         alert("Please enter an Airdrop ID");
         return;
-      }      
+      }
+      setLoading({ isLoading: true, message: 'Checking airdrop status...' });
       const response = await api.get(`/airdrop/${manualAirdropId}/status`);
       setAirdropStatus(response.data.data);
+      setLoading({ isLoading: false, message: '' });
+
     },
     onError: (error: any) => {
+      setLoading({ isLoading: false, message: '' });
       if (error.response && error.response.status === 401) {
         handleLogout();
       } else if (error.response && error.response.status === 400) {
@@ -157,6 +174,22 @@ export default function AirdropUI() {
   return (
     <>
       <NavBar />
+      {loading.isLoading && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{ color: 'white', fontSize: '24px' }}>{loading.message}</div>
+        </div>
+      )}
       {address ? (
         <Card title="Airdrop Management">
           {formErrors.length > 0 && (
